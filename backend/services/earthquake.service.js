@@ -2,100 +2,97 @@ import axios from "axios";
 import { Earthquake } from "../models/earthquake.model.js";
 
 export const syncHourlyEarthquakesService = async () => {
+  console.log("Running earthquake hourly sync...");
 
-   const response = await axios.get(
-      "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson",
-      {
-         timeout: 10000
-      }
-   );
+  const response = await axios.get(
+    "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson",
+    {
+      timeout: 10000,
+    },
+  );
 
-   const earthquakes = response.data.features;
+  const earthquakes = response.data.features;
 
-   const bulkOperations = earthquakes
-      .filter(
-         (quake) =>
-            quake.geometry &&
-            quake.geometry.coordinates &&
-            quake.geometry.coordinates.length >= 3
-      )
-      .map((quake) => {
+  const bulkOperations = earthquakes
+    .filter(
+      (quake) =>
+        quake.geometry &&
+        quake.geometry.coordinates &&
+        quake.geometry.coordinates.length >= 3,
+    )
+    .map((quake) => {
+      return {
+        updateOne: {
+          filter: {
+            earthquakeId: quake.id,
+          },
 
-         return {
+          update: {
+            $set: {
+              earthquakeId: quake.id,
 
-            updateOne: {
+              magnitude: quake.properties.mag,
 
-               filter: {
-                  earthquakeId: quake.id
-               },
+              place: quake.properties.place,
 
-               update: {
+              title: quake.properties.title,
 
-                  $set: {
+              eventTime: new Date(quake.properties.time),
 
-                     earthquakeId: quake.id,
+              updatedTime: new Date(quake.properties.updated),
 
-                     magnitude: quake.properties.mag,
+              status: quake.properties.status,
 
-                     place: quake.properties.place,
+              tsunami: quake.properties.tsunami,
 
-                     title: quake.properties.title,
+              alertLevel: quake.properties.alert,
 
-                     eventTime: new Date(quake.properties.time),
+              significance: quake.properties.sig,
 
-                     updatedTime: new Date(quake.properties.updated),
+              feltReports: quake.properties.felt,
 
-                     status: quake.properties.status,
+              cdi: quake.properties.cdi,
 
-                     tsunami: quake.properties.tsunami,
+              mmi: quake.properties.mmi,
 
-                     alertLevel: quake.properties.alert,
+              magType: quake.properties.magType,
 
-                     significance: quake.properties.sig,
+              gap: quake.properties.gap,
 
-                     feltReports: quake.properties.felt,
+              rms: quake.properties.rms,
 
-                     cdi: quake.properties.cdi,
+              nst: quake.properties.nst,
 
-                     mmi: quake.properties.mmi,
+              dmin: quake.properties.dmin,
 
-                     magType: quake.properties.magType,
+              earthquakeType: quake.properties.type,
 
-                     gap: quake.properties.gap,
+              location: {
+                type: "Point",
 
-                     rms: quake.properties.rms,
+                coordinates: [
+                  quake.geometry.coordinates[0],
+                  quake.geometry.coordinates[1],
+                ],
+              },
 
-                     nst: quake.properties.nst,
+              depth: quake.geometry.coordinates[2],
 
-                     dmin: quake.properties.dmin,
+              rawData: quake,
+            },
+          },
 
-                     earthquakeType: quake.properties.type,
+          upsert: true,
+        },
+      };
+    });
 
-                     location: {
-                        type: "Point",
+  const result = await Earthquake.bulkWrite(bulkOperations);
+  console.log("Hourly earthquake sync completed");
 
-                        coordinates: [
-                           quake.geometry.coordinates[0],
-                           quake.geometry.coordinates[1]
-                        ]
-                     },
-
-                     depth: quake.geometry.coordinates[2],
-
-                     rawData: quake
-                  }
-               },
-
-               upsert: true
-            }
-         };
-      });
-
-   const result = await Earthquake.bulkWrite(bulkOperations);
-
-   return {
-      totalFetched: earthquakes.length,
-      insertedCount: result.upsertedCount,
-      modifiedCount: result.modifiedCount
-   };
+  return {
+    totalFetched: earthquakes.length,
+    insertedCount: result.upsertedCount,
+    modifiedCount: result.modifiedCount,
+  };
 };

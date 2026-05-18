@@ -1,0 +1,14 @@
+name: Earthquake Hourly Scheduler
+
+on:
+  schedule:
+    - cron: "* * * * *"
+
+jobs:
+  sync-earthquakes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Earthquake Hourly API
+        run: |
+          curl --max-time 60 -X GET https://kanshacare.onrender.com/api/earthquake/hourlyUpdate
