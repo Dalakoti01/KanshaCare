@@ -1,6 +1,8 @@
 name: Earthquake Hourly Scheduler
 
 on:
+  workflow_dispatch:
+
   schedule:
     - cron: "* * * * *"
 
@@ -11,4 +13,6 @@ jobs:
     steps:
       - name: Trigger Earthquake Hourly API
         run: |
+          echo "Calling earthquake API..."
           curl --max-time 60 -X GET https://kanshacare.onrender.com/api/earthquake/hourlyUpdate
+          echo "API call completed"
