@@ -105,8 +105,6 @@ export const   getAllEarthquakes = async (req, res) =>{
   }
 }
 
-
-
 export const syncHourlyEarthquakes = async (req, res) => {
 
    try {
@@ -132,4 +130,274 @@ export const syncHourlyEarthquakes = async (req, res) => {
       });
 
    }
+};
+
+export const getAllEarthquakeFromModel = async (req, res) => {
+  try {
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+
+    const skip = (page - 1) * limit;
+
+    const totalEarthquakes = await Earthquake.countDocuments();
+
+    const allEarthquakes = await Earthquake.find()
+      .sort({ eventTime: -1 })
+
+      .select(
+        "earthquakeId magnitude place title eventTime alertLevel significance tsunami location depth"
+      )
+
+      .skip(skip)
+      .limit(limit)
+
+      .lean();
+
+    return res.status(200).json({
+      message: "Earthquakes fetched successfully",
+      success: true,
+
+      currentPage: page,
+      totalPages: Math.ceil(totalEarthquakes / limit),
+
+      totalEarthquakes,
+
+      earthquakesPerPage: limit,
+
+      allEarthquakes,
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
+
+export const dashboardStats = async (req, res) => {
+
+  try {
+
+    // Get time range from query
+    const range = req.query.range || "24h";
+
+    // Current date
+    const currentDate = new Date();
+
+    // Calculate start date based on range
+    let startDate = new Date();
+
+    switch (range) {
+
+      case "1h":
+        startDate.setHours(currentDate.getHours() - 1);
+        break;
+
+      case "24h":
+        startDate.setHours(currentDate.getHours() - 24);
+        break;
+
+      case "7d":
+        startDate.setDate(currentDate.getDate() - 7);
+        break;
+
+      case "30d":
+        startDate.setDate(currentDate.getDate() - 30);
+        break;
+
+      default:
+        startDate.setHours(currentDate.getHours() - 24);
+    }
+
+    // Fetch earthquakes within selected time range
+    const earthquakes = await Earthquake.find({
+      eventTime: {
+        $gte: startDate
+      }
+    }).lean();
+
+    // Total earthquakes
+    const totalEarthquakes = earthquakes.length;
+
+    // High severity earthquakes
+    const highSeverityCount = earthquakes.filter(
+      (quake) => quake.magnitude >= 5
+    ).length;
+
+    // Tsunami warnings
+    const tsunamiWarnings = earthquakes.filter(
+      (quake) => quake.tsunami === 1
+    ).length;
+
+    // Average magnitude
+    const averageMagnitude =
+      totalEarthquakes > 0
+        ? (
+            earthquakes.reduce(
+              (sum, quake) => sum + (quake.magnitude || 0),
+              0
+            ) / totalEarthquakes
+          ).toFixed(1)
+        : 0;
+
+    // Strongest earthquake
+    const strongestEarthquake =
+      totalEarthquakes > 0
+        ? Math.max(...earthquakes.map((quake) => quake.magnitude || 0))
+        : 0;
+
+    // Recent earthquakes in last hour
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(currentDate.getHours() - 1);
+
+    const recentEarthquakes = earthquakes.filter(
+      (quake) => quake.eventTime >= oneHourAgo
+    ).length;
+
+    return res.status(200).json({
+
+      message: "Dashboard stats fetched successfully",
+
+      success: true,
+
+      selectedRange: range,
+
+      stats: {
+
+        totalEarthquakes,
+
+        highSeverityCount,
+
+        tsunamiWarnings,
+
+        averageMagnitude: Number(averageMagnitude),
+
+        strongestEarthquake,
+
+        recentEarthquakes
+      }
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false
+    });
+  }
+};
+
+export const incidentTracker = async (req, res) => {
+
+  try {
+
+    // Query Params
+    const page = Number(req.query.page) || 1;
+
+    const limit = Number(req.query.limit) || 10;
+
+    const range = req.query.range || "24h";
+
+    const skip = (page - 1) * limit;
+
+    // Current Date
+    const currentDate = new Date();
+
+    // Time Filter
+    let startDate = new Date();
+
+    switch (range) {
+
+      case "1h":
+        startDate.setHours(currentDate.getHours() - 1);
+        break;
+
+      case "24h":
+        startDate.setHours(currentDate.getHours() - 24);
+        break;
+
+      case "7d":
+        startDate.setDate(currentDate.getDate() - 7);
+        break;
+
+      case "30d":
+        startDate.setDate(currentDate.getDate() - 30);
+        break;
+
+      default:
+        startDate.setHours(currentDate.getHours() - 24);
+    }
+
+    // Total Count
+    const totalEarthquakes = await Earthquake.countDocuments({
+      eventTime: {
+        $gte: startDate
+      }
+    });
+
+    // Fetch Incidents
+    const incidents = await Earthquake.find({
+      eventTime: {
+        $gte: startDate
+      }
+    })
+
+      .sort({ eventTime: -1 })
+
+      .skip(skip)
+
+      .limit(limit)
+
+      .select(
+        `
+        earthquakeId
+        magnitude
+        place
+        title
+        eventTime
+        alertLevel
+        significance
+        tsunami
+        depth
+        location
+        `
+      )
+
+      .lean();
+
+    return res.status(200).json({
+
+      message: "Incident tracker data fetched successfully",
+
+      success: true,
+
+      currentPage: page,
+
+      totalPages: Math.ceil(totalEarthquakes / limit),
+
+      totalEarthquakes,
+
+      incidentsPerPage: limit,
+
+      incidents
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+
+      message: "Internal Server Error",
+
+      success: false
+    });
+  }
 };
