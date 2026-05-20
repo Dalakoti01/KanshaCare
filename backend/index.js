@@ -5,7 +5,10 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import earthquakeRouter from "./routes/earthquake.router.js";
 import locationRouter from './routes/location.router.js'
+import telegramRouter from './routes/telegram.route.js'
 // import startEarthquakeCron from './cron/earthquake.cron.js';
+import "./services/telegram.service.js"
+
 dotenv.config();
 
 connectDB();
@@ -23,6 +26,7 @@ app.use(bodyParser.json());
 
 app.use("/api/earthquake", earthquakeRouter);
 app.use("/api/location",locationRouter)
+app.use("/api/telegram",telegramRouter)
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);

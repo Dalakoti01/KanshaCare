@@ -6,6 +6,17 @@ import axios from "axios";
 
 import toast from "react-hot-toast";
 
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+} from "react-leaflet";
+
+import L from "leaflet";
+
+import "leaflet/dist/leaflet.css";
+
 import useGetDashboardStats from "../hooks/useGetDashboardStats.js";
 
 import useGetIncidentTracker from "../hooks/useGetIncidentTracker.js";
@@ -15,6 +26,20 @@ import {
   removeLocation,
 } from "../redux/locationSlice.js";
 import useGetAllLocations from "../hooks/useGetAllLocations.js";
+import useGetSystemHealth from "../hooks/useGetSystemHealth.js";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 export default function Dashboard() {
 
@@ -37,12 +62,15 @@ export default function Dashboard() {
 
   useGetAllLocations()
 
-  const {
-    dashboardStats,
-    incidentTracker,
-    incidentPagination,
-    loading,
-  } = useSelector((store) => store.earthquake);
+  useGetSystemHealth()
+
+const {
+  dashboardStats,
+  incidentTracker,
+  incidentPagination,
+  systemHealth,
+  loading,
+} = useSelector((store) => store.earthquake);
 
   const { locations } = useSelector(
     (store) => store.location
@@ -338,10 +366,10 @@ export default function Dashboard() {
         </section>
 
         {/* Incident Tracker + Map */}
-        <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <section >
 
           {/* Incident Tracker */}
-          <div className="xl:col-span-2 rounded-3xl border border-white/10 bg-[#111827] p-6">
+          <div className="rounded-3xl border border-white/10 bg-[#111827] p-6">
 
             <div className="mb-6 flex items-center justify-between">
 
@@ -474,107 +502,178 @@ export default function Dashboard() {
 
           </div>
 
-          {/* Map Placeholder */}
-          <div className="rounded-3xl border border-white/10 bg-[#111827] p-6">
-
-            <div className="mb-6">
-
-              <h2 className="text-xl font-semibold">
-                Global Seismic Map
-              </h2>
-
-              <p className="text-sm text-gray-400 mt-1">
-                Live earthquake hotspots visualization
-              </p>
-
-            </div>
-
-            <div className="flex h-[500px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 text-center text-gray-400">
-
-              Interactive Earthquake Map Placeholder
-
-            </div>
-
-          </div>
+          
 
         </section>
 
         {/* Monitoring Status */}
-        <section className="rounded-3xl border border-white/10 bg-[#111827] p-6">
+        {/* Monitoring Status */}
+<section className="rounded-3xl border border-white/10 bg-[#111827] p-6">
 
-          <div className="mb-6">
+  <div className="mb-6">
 
-            <h2 className="text-2xl font-semibold">
-              Monitoring Status
-            </h2>
+    <h2 className="text-2xl font-semibold">
+      Monitoring Status
+    </h2>
 
-            <p className="text-sm text-gray-400 mt-1">
-              Real-time ingestion pipeline monitoring
-            </p>
+    <p className="text-sm text-gray-400 mt-1">
+      Real-time ingestion pipeline monitoring
+    </p>
 
-          </div>
+  </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+    {/* Last Successful Poll */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
 
-              <p className="text-sm text-gray-400">
-                Last Data Refresh
-              </p>
+      <p className="text-sm text-gray-400">
+        Last Successful Poll
+      </p>
 
-              <h3 className="mt-3 text-2xl font-bold text-green-400">
+      <h3 className="mt-3 text-xl font-bold text-green-400">
 
-                22 sec ago
+        {systemHealth?.lastSuccessfulPoll
+          ? new Date(
+              systemHealth.lastSuccessfulPoll
+            ).toLocaleString()
+          : "No Data"}
 
-              </h3>
+      </h3>
 
-            </div>
+      <p className="mt-2 text-xs text-gray-500">
+        Latest successful ingestion timestamp
+      </p>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+    </div>
 
-              <p className="text-sm text-gray-400">
-                Live Feed Reliability
-              </p>
+    {/* Success Rate */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
 
-              <h3 className="mt-3 text-2xl font-bold text-cyan-400">
+      <p className="text-sm text-gray-400">
+        Success Rate (1h)
+      </p>
 
-                99.2%
+      <h3 className="mt-3 text-3xl font-bold text-cyan-400">
 
-              </h3>
+        {systemHealth?.successRate || 0}%
 
-            </div>
+      </h3>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <p className="mt-2 text-xs text-gray-500">
+        API ingestion reliability
+      </p>
 
-              <p className="text-sm text-gray-400">
-                Active Service Issues
-              </p>
+    </div>
 
-              <h3 className="mt-3 text-2xl font-bold text-red-400">
+    {/* Current Failures */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
 
-                0
+      <p className="text-sm text-gray-400">
+        Current Failures
+      </p>
 
-              </h3>
+      <h3 className={`mt-3 text-3xl font-bold ${
+        systemHealth?.currentFailures > 0
+          ? "text-red-400"
+          : "text-green-400"
+      }`}>
 
-            </div>
+        {systemHealth?.currentFailures || 0}
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      </h3>
 
-              <p className="text-sm text-gray-400">
-                Historical Coverage
-              </p>
+      <p className="mt-2 text-xs text-gray-500">
+        Failed sync attempts in last hour
+      </p>
 
-              <h3 className="mt-3 text-2xl font-bold text-green-400">
+    </div>
 
-                30 Days
+    {/* Backfill Status */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
 
-              </h3>
+      <p className="text-sm text-gray-400">
+        Historical Backfill
+      </p>
 
-            </div>
+      <h3 className={`mt-3 text-2xl font-bold ${
+        systemHealth?.backfillCompleted
+          ? "text-green-400"
+          : "text-yellow-400"
+      }`}>
 
-          </div>
+        {systemHealth?.backfillCompleted
+          ? "Completed"
+          : "Pending"}
 
-        </section>
+      </h3>
+
+      <p className="mt-2 text-xs text-gray-500">
+        Initial earthquake history import
+      </p>
+
+    </div>
+
+    {/* Average Execution Time */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+
+      <p className="text-sm text-gray-400">
+        Avg Execution Time
+      </p>
+
+      <h3 className="mt-3 text-3xl font-bold text-orange-400">
+
+        {systemHealth?.averageExecutionTime || 0} ms
+
+      </h3>
+
+      <p className="mt-2 text-xs text-gray-500">
+        Average ingestion processing time
+      </p>
+
+    </div>
+
+    {/* Total Syncs */}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+
+      <p className="text-sm text-gray-400">
+        Total Syncs (1h)
+      </p>
+
+      <h3 className="mt-3 text-3xl font-bold text-purple-400">
+
+        {systemHealth?.totalSyncsLastHour || 0}
+
+      </h3>
+
+      <p className="mt-2 text-xs text-gray-500">
+        Total ingestion executions in last hour
+      </p>
+
+    </div>
+
+  </div>
+
+  {/* Failure Message */}
+  {systemHealth?.latestFailureMessage && (
+
+    <div className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
+
+      <h4 className="text-red-300 font-semibold">
+        Latest Failure Message
+      </h4>
+
+      <p className="mt-2 text-sm text-red-200">
+
+        {systemHealth.latestFailureMessage}
+
+      </p>
+
+    </div>
+
+  )}
+
+</section>
 
         {/* Per Location Monitoring */}
         <section>
@@ -770,12 +869,61 @@ export default function Dashboard() {
 
                 </div>
 
-                {/* Placeholder */}
-                <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-gray-400 h-[180px] flex items-center justify-center">
+                {/* Mini Map */}
+<div className="mt-6 overflow-hidden rounded-2xl border border-white/10">
 
-                  Nearby Earthquake Mini Map / Activity Chart
+  {location?.coordinates?.coordinates && (
 
-                </div>
+    <MapContainer
+      center={[
+        location.coordinates.coordinates[1],
+        location.coordinates.coordinates[0],
+      ]}
+      zoom={6}
+      scrollWheelZoom={false}
+      className="h-[220px] w-full z-0"
+    >
+
+      <TileLayer
+        attribution='&copy; OpenStreetMap contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      <Marker
+        position={[
+          location.coordinates.coordinates[1],
+          location.coordinates.coordinates[0],
+        ]}
+      >
+
+        <Popup>
+
+          <div className="text-black">
+
+            <h3 className="font-semibold">
+              {location.cityName}
+            </h3>
+
+            <p>
+              Risk Score: {location.riskScore}%
+            </p>
+
+            <p>
+              Nearby Events:{" "}
+              {location.analytics?.nearbyEarthquakes || 0}
+            </p>
+
+          </div>
+
+        </Popup>
+
+      </Marker>
+
+    </MapContainer>
+
+  )}
+
+</div>
 
               </div>
 

@@ -238,15 +238,90 @@ export const allLocations = async (req, res) => {
       createdAt: -1,
     });
 
+    // Enrich Locations With Analytics
+    const enrichedLocations = await Promise.all(
+
+      allLocations.map(async (location) => {
+
+        const [longitude, latitude] =
+          location.coordinates.coordinates;
+
+        const nearbyEarthquakes =
+          await Earthquake.find({
+
+            location: {
+
+              $nearSphere: {
+
+                $geometry: {
+
+                  type: "Point",
+
+                  coordinates: [
+                    longitude,
+                    latitude,
+                  ],
+                },
+
+                $maxDistance:
+                  location.monitoringRadius * 1000,
+              },
+            },
+          });
+
+        const nearbyCount =
+          nearbyEarthquakes.length;
+
+        const strongestEvent =
+          nearbyEarthquakes.length > 0
+            ? Math.max(
+                ...nearbyEarthquakes.map(
+                  (quake) =>
+                    quake.magnitude || 0
+                )
+              )
+            : 0;
+
+        const averageMagnitude =
+          nearbyEarthquakes.length > 0
+            ? (
+                nearbyEarthquakes.reduce(
+                  (sum, quake) =>
+                    sum +
+                    (quake.magnitude || 0),
+                  0
+                ) / nearbyEarthquakes.length
+              ).toFixed(2)
+            : 0;
+
+        return {
+
+          ...location.toObject(),
+
+          analytics: {
+
+            nearbyEarthquakes:
+              nearbyCount,
+
+            strongestEvent,
+
+            averageMagnitude,
+          },
+        };
+      })
+    );
+
     return res.status(200).json({
 
-      message: "All monitored locations fetched successfully",
+      message:
+        "All monitored locations fetched successfully",
 
       success: true,
 
-      totalLocations: allLocations.length,
+      totalLocations:
+        enrichedLocations.length,
 
-      allLocations,
+      allLocations: enrichedLocations,
     });
 
   } catch (error) {

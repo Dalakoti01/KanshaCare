@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
 const earthquakeSchema = new mongoose.Schema(
   {
@@ -6,13 +6,23 @@ const earthquakeSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      index: true
+      index: true,
     },
 
     magnitude: {
       type: Number,
-      index: true
+      index: true,
     },
+
+    highSeverityAlertSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    locationAlertSent: {
+   type: Boolean,
+   default: false,
+},
 
     place: String,
 
@@ -20,7 +30,7 @@ const earthquakeSchema = new mongoose.Schema(
 
     eventTime: {
       type: Date,
-      index: true
+      index: true,
     },
 
     updatedTime: Date,
@@ -55,24 +65,26 @@ const earthquakeSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point"
+        default: "Point",
       },
 
       coordinates: {
         type: [Number], // [longitude, latitude]
-        required: true
-      }
+        required: true,
+      },
     },
 
     depth: Number,
 
     rawData: mongoose.Schema.Types.Mixed
+
+    
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 earthquakeSchema.index({ location: "2dsphere" });
 
-export const Earthquake = mongoose.model('Earthquake', earthquakeSchema);
+export const Earthquake = mongoose.model("Earthquake", earthquakeSchema);

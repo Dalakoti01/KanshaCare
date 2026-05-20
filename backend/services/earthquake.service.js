@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { Earthquake } from "../models/earthquake.model.js";
 import { SyncLog } from "../models/synclogs.models.js";
+import { checkHighSeverityAlerts, checkLocationBasedAlerts, checkSourceSilenceAlert } from "./alert.service.js";
 
 
 export const syncHourlyEarthquakesService = async () => {
@@ -110,6 +111,12 @@ export const syncHourlyEarthquakesService = async () => {
     const result = await Earthquake.bulkWrite(
       bulkOperations
     );
+
+    await checkHighSeverityAlerts();
+
+    await checkSourceSilenceAlert();
+
+    await checkLocationBasedAlerts();
 
     // SUCCESS LOG
     await SyncLog.create({

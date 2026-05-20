@@ -1,5 +1,5 @@
 import express from 'express';
-import { dashboardStats, getAllEarthquakeFromModel, getAllEarthquakes, incidentTracker, syncHourlyEarthquakes } from '../controller/earthquake.controller.js';
+import { dashboardStats, getAllEarthquakeFromModel, getAllEarthquakes, getSystemHealth, incidentTracker, syncHourlyEarthquakes } from '../controller/earthquake.controller.js';
 
 const app = express();
 
@@ -10,5 +10,6 @@ router.route('/hourlyUpdate').get(syncHourlyEarthquakes)
 router.route('/allEarthquakeFromModel').get(getAllEarthquakeFromModel)
 router.route('/dashboardStat').get(dashboardStats)
 router.route('/incidentTracker').get(incidentTracker)
+router.route("/systemHealth").get(getSystemHealth);
 
 export default router

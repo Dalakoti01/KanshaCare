@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Earthquake } from "../models/earthquake.model.js";
 import { syncHourlyEarthquakesService } from "../services/earthquake.service.js";
+import { SyncLog } from "../models/synclogs.models.js";
 
 export const   getAllEarthquakes = async (req, res) =>{
   try {
@@ -398,6 +399,122 @@ export const incidentTracker = async (req, res) => {
       message: "Internal Server Error",
 
       success: false
+    });
+  }
+};
+
+
+
+
+export const getSystemHealth = async (req, res) => {
+
+  try {
+
+    // Time Range -> Last 1 Hour
+    const oneHourAgo = new Date(
+      Date.now() - 60 * 60 * 1000
+    );
+
+    // Fetch Logs From Last Hour
+    const lastHourLogs = await SyncLog.find({
+      createdAt: { $gte: oneHourAgo },
+    }).sort({ createdAt: -1 });
+
+    // Total Logs
+    const totalLogs = lastHourLogs.length;
+
+    // Success Logs
+    const successfulLogs = lastHourLogs.filter(
+      (log) => log.status === "success"
+    );
+
+    // Failure Logs
+    const failedLogs = lastHourLogs.filter(
+      (log) => log.status === "failure"
+    );
+
+    // Latest Successful Poll
+    const latestSuccessfulLog = successfulLogs[0];
+
+    // Success Rate Calculation
+    const successRate =
+      totalLogs > 0
+        ? (
+            (successfulLogs.length / totalLogs) *
+            100
+          ).toFixed(2)
+        : 0;
+
+    // Average Execution Time
+    const averageExecutionTime =
+      successfulLogs.length > 0
+        ? Math.round(
+
+            successfulLogs.reduce(
+              (sum, log) =>
+                sum + (log.executionTimeMs || 0),
+              0
+            ) / successfulLogs.length
+          )
+        : 0;
+
+    // Initial Backfill Status
+    const totalEarthquakes =
+      await Earthquake.countDocuments();
+
+    const backfillCompleted =
+      totalEarthquakes >= 10000;
+
+    // Latest Failure Message
+    const latestFailureLog = failedLogs[0];
+
+    return res.status(200).json({
+
+      message:
+        "System health fetched successfully",
+
+      success: true,
+
+      systemHealth: {
+
+        // Assignment Required
+        lastSuccessfulPoll:
+          latestSuccessfulLog?.createdAt || null,
+
+        successRate: Number(successRate),
+
+        currentFailures:
+          failedLogs.length,
+
+        backfillCompleted,
+
+        // Extra Operational Metrics
+        averageExecutionTime,
+
+        totalSyncsLastHour: totalLogs,
+
+        totalSuccessfulSyncs:
+          successfulLogs.length,
+
+        totalFailedSyncs:
+          failedLogs.length,
+
+        latestFailureMessage:
+          latestFailureLog?.errorMessage || null,
+
+        totalEarthquakes,
+      },
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+
+      message: "Internal Server Error",
+
+      success: false,
     });
   }
 };
