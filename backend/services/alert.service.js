@@ -49,7 +49,7 @@ Tsunami Risk:
 ${quake.tsunami ? "YES" : "NO"}
 
 Dashboard:
-https://your-frontend-url.com
+https://kansha-care.vercel.app
 `;
 
          for (const user of subscribers) {
