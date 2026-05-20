@@ -43,6 +43,7 @@ https://kansha-care.vercel.app
 - Top active regions
 - System health summary
 - Monitored location risk scores
+- The Telegram bot sends a daily earthquake summary every day at 9:00 PM IST (3:30 PM UTC).
 
 ---
 
