@@ -11,6 +11,8 @@ const earthquakeSlice = createSlice({
 
     incidentTracker: [],
 
+    incidentLoading: false,
+
     incidentPagination: {
       currentPage: 1,
       totalPages: 1,
@@ -89,6 +91,10 @@ const earthquakeSlice = createSlice({
       state.loading = action.payload;
     },
 
+    setIncidentLoading: (state, action) => {
+  state.incidentLoading = action.payload;
+},
+
     // Error
     setError: (state, action) => {
       state.error = action.payload;
@@ -103,6 +109,8 @@ export const {
   setDashboardStats,
 
   setSystemHealth,
+
+  setIncidentLoading,
 
   setIncidentTracker,
 

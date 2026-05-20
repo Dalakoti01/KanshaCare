@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import {
   setIncidentTracker,
   setIncidentPagination,
-  setLoading,
+  setIncidentLoading,
   setError,
 } from "../redux/earthquakeSlice";
 
@@ -22,63 +22,93 @@ const useGetIncidentTracker = (
   const dispatch = useDispatch();
 
   const backendUri =
-    import.meta.env.VITE_BACKEND_URI || "http://localhost:8000";
+    import.meta.env.VITE_BACKEND_URI ||
+    "http://localhost:8000";
 
-  const fetchIncidentTracker = useCallback(async () => {
+  const fetchIncidentTracker =
+    useCallback(async () => {
 
-    try {
+      try {
 
-      dispatch(setLoading(true));
+        // Start Loading
+        dispatch(setIncidentLoading(true));
 
-      const res = await axios.get(
-        `${backendUri}/api/earthquake/incidentTracker?range=${range}&page=${page}&limit=${limit}`
-      );
+        // Clear Old Data Immediately
+        dispatch(setIncidentTracker([]));
 
-      if (res.data.success) {
-
-        dispatch(setIncidentTracker(res.data.incidents));
-
-        dispatch(
-          setIncidentPagination({
-            currentPage: res.data.currentPage,
-            totalPages: res.data.totalPages,
-            totalEarthquakes: res.data.totalEarthquakes,
-            incidentsPerPage: res.data.incidentsPerPage,
-          })
+        const res = await axios.get(
+          `${backendUri}/api/earthquake/incidentTracker?range=${range}&page=${page}&limit=${limit}`
         );
 
-      } else {
+        if (res.data.success) {
 
-        dispatch(setError(res.data.message));
+          dispatch(
+            setIncidentTracker(
+              res.data.incidents
+            )
+          );
+
+          dispatch(
+            setIncidentPagination({
+              currentPage:
+                res.data.currentPage,
+
+              totalPages:
+                res.data.totalPages,
+
+              totalEarthquakes:
+                res.data.totalEarthquakes,
+
+              incidentsPerPage:
+                res.data.incidentsPerPage,
+            })
+          );
+
+        } else {
+
+          dispatch(
+            setError(res.data.message)
+          );
+
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+        dispatch(
+          setError(
+            error?.response?.data?.message ||
+            "Failed to fetch incident tracker"
+          )
+        );
+
+        toast.error(
+          "Failed to fetch incidents"
+        );
+
+      } finally {
+
+        // Stop Loading
+        dispatch(
+          setIncidentLoading(false)
+        );
 
       }
 
-    } catch (error) {
-
-      console.log(error);
-
-      dispatch(
-        setError(
-          error?.response?.data?.message ||
-            "Failed to fetch incident tracker"
-        )
-      );
-
-      toast.error("Failed to fetch incidents");
-
-    } finally {
-
-      dispatch(setLoading(false));
-
-    }
-
-  }, [backendUri, dispatch, range, page, limit]);
+    }, [
+      backendUri,
+      dispatch,
+      range,
+      page,
+      limit,
+    ]);
 
   useEffect(() => {
 
     fetchIncidentTracker();
 
-    // Poll every 60 seconds
+    // Auto Refresh Every Minute
     const interval = setInterval(() => {
 
       fetchIncidentTracker();

@@ -70,6 +70,7 @@ const {
   incidentPagination,
   systemHealth,
   loading,
+  incidentLoading,
 } = useSelector((store) => store.earthquake);
 
   const { locations } = useSelector(
@@ -206,11 +207,11 @@ const {
 
             </div>
 
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition cursor-pointer">
+            {/* <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition cursor-pointer">
 
               Refresh
 
-            </button>
+            </button> */}
 
           </div>
 
@@ -248,21 +249,23 @@ const {
               ].map((item) => (
 
                 <button
-                  key={item.value}
+  key={item.value}
 
-                  onClick={() => {
-                    setSelectedRange(item.value);
-                    setCurrentPage(1);
-                  }}
+  disabled={incidentLoading}
 
-                  className={`rounded-xl border px-4 py-2 text-sm transition cursor-pointer
+  onClick={() => {
+    setSelectedRange(item.value);
+    setCurrentPage(1);
+  }}
 
-                  ${
-                    selectedRange === item.value
-                      ? "bg-blue-500 border-blue-500 text-white"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
-                  }`}
-                >
+  className={`rounded-xl border px-4 py-2 text-sm transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+
+  ${
+    selectedRange === item.value
+      ? "bg-blue-500 border-blue-500 text-white"
+      : "border-white/10 bg-white/5 hover:bg-white/10"
+  }`}
+>
 
                   {item.label}
 
@@ -395,72 +398,100 @@ const {
 
             <div className="space-y-4">
 
-              {incidentTracker?.map((quake) => (
+  {incidentLoading ? (
 
-                <div
-                  key={quake.earthquakeId}
-                  className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 hover:bg-white/[0.07] transition"
-                >
+    <div className="flex flex-col items-center justify-center py-16">
 
-                  <div className="flex items-center gap-4">
+      <div className="h-14 w-14 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
 
-                    <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold ${getSeverityColor(
-                        quake.magnitude
-                      )}`}
-                    >
+      <p className="mt-5 text-sm text-gray-400">
+        Loading earthquake incidents...
+      </p>
 
-                      {quake.magnitude?.toFixed(1)}
+    </div>
 
-                    </div>
+  ) : incidentTracker?.length === 0 ? (
 
-                    <div>
+    <div className="py-16 text-center">
 
-                      <h3 className="text-lg font-semibold">
-                        {quake.place}
-                      </h3>
+      <p className="text-gray-400">
+        No earthquake incidents found
+      </p>
 
-                      <p className="text-sm text-gray-400 mt-1">
+    </div>
 
-                        {new Date(quake.eventTime).toLocaleString()}
+  ) : (
 
-                      </p>
+    incidentTracker?.map((quake) => (
 
-                      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        key={quake.earthquakeId}
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 hover:bg-white/[0.07] transition"
+      >
 
-                        <span className="rounded-full bg-red-500/10 border border-red-500/20 px-3 py-1 text-xs text-red-300">
+        <div className="flex items-center gap-4">
 
-                          {quake.alertLevel || "Normal"} Alert
+          <div
+            className={`flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold ${getSeverityColor(
+              quake.magnitude
+            )}`}
+          >
 
-                        </span>
+            {quake.magnitude?.toFixed(1)}
 
-                        <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300">
+          </div>
 
-                          Significance {quake.significance}
+          <div>
 
-                        </span>
+            <h3 className="text-lg font-semibold">
+              {quake.place}
+            </h3>
 
-                        {quake.tsunami === 1 && (
+            <p className="text-sm text-gray-400 mt-1">
 
-                          <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1 text-xs text-purple-300">
+              {new Date(
+                quake.eventTime
+              ).toLocaleString()}
 
-                            Tsunami Risk
+            </p>
 
-                          </span>
+            <div className="mt-3 flex flex-wrap gap-2">
 
-                        )}
+              <span className="rounded-full bg-red-500/10 border border-red-500/20 px-3 py-1 text-xs text-red-300">
 
-                      </div>
+                {quake.alertLevel || "Normal"} Alert
 
-                    </div>
+              </span>
 
-                  </div>
+              <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300">
 
-                </div>
+                Significance {quake.significance}
 
-              ))}
+              </span>
+
+              {quake.tsunami === 1 && (
+
+                <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1 text-xs text-purple-300">
+
+                  Tsunami Risk
+
+                </span>
+
+              )}
 
             </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    ))
+
+  )}
+
+</div>
 
             {/* Pagination */}
             <div className="mt-6 flex items-center justify-between">
